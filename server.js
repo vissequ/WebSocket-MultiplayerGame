@@ -3,6 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+// Create an HTTP server
 const server = http.createServer((req, res) => {
   if (req.url === '/' || req.url === '/index.html') {
     fs.readFile(path.join(__dirname, 'public', 'index.html'), (err, data) => {
@@ -20,17 +21,21 @@ const server = http.createServer((req, res) => {
   }
 });
 
+// Attach WebSocket server to the HTTP server
 const wss = new WebSocket.Server({ server });
+
 const players = new Map();
 
 wss.on('connection', (ws) => {
   const playerId = Date.now();
 
+  // Send new player their ID
   ws.send(JSON.stringify({
     type: 'init',
     id: playerId
   }));
 
+  // Send the new player info about all existing players
   players.forEach((playerData, existingId) => {
     ws.send(JSON.stringify({
       type: 'playerJoined',
@@ -39,6 +44,7 @@ wss.on('connection', (ws) => {
     }));
   });
 
+  // Broadcast new player to others
   wss.clients.forEach(client => {
     if (client !== ws && client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
@@ -58,6 +64,7 @@ wss.on('connection', (ws) => {
         message: data.message
       });
 
+      // Broadcast update to all other players
       wss.clients.forEach(client => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
@@ -84,6 +91,7 @@ wss.on('connection', (ws) => {
   });
 });
 
+// Start the server on Railway's PORT or 8080 locally
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -3,7 +3,6 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-// Create an HTTP server
 const server = http.createServer((req, res) => {
   if (req.url === '/' || req.url === '/index.html') {
     fs.readFile(path.join(__dirname, 'public', 'index.html'), (err, data) => {
@@ -21,36 +20,33 @@ const server = http.createServer((req, res) => {
   }
 });
 
-// Attach WebSocket server to the HTTP server
 const wss = new WebSocket.Server({ server });
-
 const players = new Map();
 
 wss.on('connection', (ws) => {
   const playerId = Date.now();
 
-  // Send new player their ID
   ws.send(JSON.stringify({
     type: 'init',
     id: playerId
   }));
 
-  // Send the new player info about all existing players
   players.forEach((playerData, existingId) => {
     ws.send(JSON.stringify({
       type: 'playerJoined',
       id: existingId,
-      position: playerData.position || { x: 0, y: 0, z: 0 }
+      position: playerData.position || { x: 0, y: 0, z: 0 },
+      username: playerData.username || `Player ${existingId}` // Send username
     }));
   });
 
-  // Broadcast new player to others
   wss.clients.forEach(client => {
     if (client !== ws && client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
         type: 'playerJoined',
         id: playerId,
-        position: { x: 0, y: 0, z: 0 }
+        position: { x: 0, y: 0, z: 0 },
+        username: `Player ${playerId}` // Initial username
       }));
     }
   });
@@ -61,17 +57,18 @@ wss.on('connection', (ws) => {
     if (data.type === 'update') {
       players.set(playerId, {
         position: data.position,
-        message: data.message
+        message: data.message,
+        username: data.username || players.get(playerId)?.username || `Player ${playerId}` // Store username
       });
 
-      // Broadcast update to all other players
       wss.clients.forEach(client => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
             type: 'update',
             id: playerId,
             position: data.position,
-            message: data.message
+            message: data.message,
+            username: data.username // Broadcast username
           }));
         }
       });
@@ -91,7 +88,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Start the server on Railway's PORT or 8080 locally
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

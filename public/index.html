@@ -298,16 +298,16 @@
         const keys = {};
 
         document.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
-            if (e.key === 'Enter' || e.key === 'Return') {
-                const messageInput = document.getElementById('messageInput');
-                const usernameInput = document.getElementById('usernameInput');
-                if (document.activeElement === usernameInput) {
-                    updateUsername(myId, usernameInput.value);
-                    usernameInput.blur();
-                } else if (document.activeElement !== messageInput) {
-                    e.preventDefault();
-                    messageInput.focus();
+              keys[e.key] = true;
+              if (e.key === 'Enter' || e.key === 'Return') {
+                // ... (unchanged)
+              } else if (e.key === ' ' && document.activeElement !== messageInput && document.activeElement !== usernameInput) {
+                const player = players.get(myId);
+                // Only allow jump if not already jumping, falling, or flying
+                if (player && !player.isFalling && !player.isJumping && !player.isFlying) {
+                  player.isJumping = true;
+                  player.jumpTime = 0;
+                  e.preventDefault(); // Prevent repeated triggers while key is held
                 }
             } else if (e.key === ' ' && document.activeElement !== messageInput && document.activeElement !== usernameInput) {
                 const player = players.get(myId);

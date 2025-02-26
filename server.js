@@ -35,8 +35,7 @@ wss.on('connection', (ws) => {
     ws.send(JSON.stringify({
       type: 'playerJoined',
       id: existingId,
-      position: playerData.position || { x: 0, y: 0, z: 0 },
-      username: playerData.username || `Player ${existingId}` // Send username
+      position: playerData.position || { x: 0, y: 0, z: 0 }
     }));
   });
 
@@ -45,8 +44,7 @@ wss.on('connection', (ws) => {
       client.send(JSON.stringify({
         type: 'playerJoined',
         id: playerId,
-        position: { x: 0, y: 0, z: 0 },
-        username: `Player ${playerId}` // Initial username
+        position: { x: 0, y: 0, z: 0 }
       }));
     }
   });
@@ -57,8 +55,7 @@ wss.on('connection', (ws) => {
     if (data.type === 'update') {
       players.set(playerId, {
         position: data.position,
-        message: data.message,
-        username: data.username || players.get(playerId)?.username || `Player ${playerId}` // Store username
+        message: data.message
       });
 
       wss.clients.forEach(client => {
@@ -67,8 +64,7 @@ wss.on('connection', (ws) => {
             type: 'update',
             id: playerId,
             position: data.position,
-            message: data.message,
-            username: data.username // Broadcast username
+            message: data.message
           }));
         }
       });

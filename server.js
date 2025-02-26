@@ -35,6 +35,15 @@ wss.on('connection', (ws) => {
     id: playerId
   }));
 
+  // Send the new player info about all existing players
+  players.forEach((playerData, existingId) => {
+    ws.send(JSON.stringify({
+      type: 'playerJoined',
+      id: existingId,
+      position: playerData.position || { x: 0, y: 0, z: 0 }
+    }));
+  });
+
   // Broadcast new player to others
   wss.clients.forEach(client => {
     if (client !== ws && client.readyState === WebSocket.OPEN) {

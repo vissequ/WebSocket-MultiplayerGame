@@ -67,523 +67,673 @@
     </div>
     <div id="coordinates">X: 0, Y: 0, Z: 0</div>
     <div id="flightModeGUI">Press F for Flight Mode</div>
+<script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.134.0/examples/js/loaders/FontLoader.js"></script>
+<script src="https://unpkg.com/three@0.134.0/examples/js/geometries/TextGeometry.js"></script>
 
-    <script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/FontLoader.js"></script>
-    <script src="https://unpkg.com/three@0.134.0/examples/js/geometries/TextGeometry.js"></script>
+<script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    <script>
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+    const skyGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
+    const skyMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide });
+    const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+    scene.add(sky);
 
-        // ... (all your scene setup code remains unchanged: sky, sun, clouds, ground, trees, roads, buildings, cars)
+    const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
+    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    sun.position.set(100, 200, 100);
+    scene.add(sun);
 
-        const players = new Map();
-        let myId;
-        const myMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const otherMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const clouds = [];
+    function createCloud(x, y, z) {
+        const cloudGeometry = new THREE.PlaneGeometry(20, 10);
+        const cloudMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide });
+        const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
+        cloud.position.set(x, y, z);
+        cloud.rotation.x = Math.PI / 2;
+        scene.add(cloud);
+        return cloud;
+    }
 
-        function createPerson(x, z, material, isMe = false) {
-            const personGroup = new THREE.Group();
-            const torsoGeometry = new THREE.BoxGeometry(0.6, 1.0, 0.4);
-            const torso = new THREE.Mesh(torsoGeometry, material);
-            torso.position.set(0, 1.0, 0);
-            personGroup.add(torso);
-            const headGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-            const headMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc99 });
-            const head = new THREE.Mesh(headGeometry, headMaterial);
-            head.position.set(0, 1.6, 0);
-            personGroup.add(head);
-            const armGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
-            const leftArm = new THREE.Mesh(armGeometry, material);
-            leftArm.position.set(-0.5, 0.9, 0);
-            personGroup.add(leftArm);
-            const rightArm = new THREE.Mesh(armGeometry, material);
-            rightArm.position.set(0.5, 0.9, 0);
-            personGroup.add(rightArm);
-            const legGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
-            const leftLeg = new THREE.Mesh(legGeometry, material);
-            leftLeg.position.set(-0.2, 0.4, 0);
-            personGroup.add(leftLeg);
-            const rightLeg = new THREE.Mesh(legGeometry, material);
-            rightLeg.position.set(0.2, 0.4, 0);
-            personGroup.add(rightLeg);
-            personGroup.position.set(x, 0, z);
-            scene.add(personGroup);
-            return {
-                group: personGroup,
-                leftArm: leftArm,
-                rightArm: rightArm,
-                leftLeg: leftLeg,
-                rightLeg: rightLeg,
-                animationTime: 0,
-                isFalling: false,
-                fallTime: 0,
-                isJumping: false,
-                jumpTime: 0,
-                isFlying: false
-            };
+    clouds.push(createCloud(-50, 150, 0));
+    clouds.push(createCloud(0, 160, -50));
+    clouds.push(createCloud(50, 155, 50));
+    clouds.push(createCloud(-30, 165, 30));
+
+    const groundGeometry = new THREE.PlaneGeometry(100, 100);
+    const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    function createTree(x, z) {
+        const treeGroup = new THREE.Group();
+        const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2, 8);
+        const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+        const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+        trunk.position.set(0, 1, 0);
+        treeGroup.add(trunk);
+        const canopyGeometry = new THREE.SphereGeometry(1.5, 16, 16);
+        const canopyMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 });
+        const canopy = new THREE.Mesh(canopyGeometry, canopyMaterial);
+        canopy.position.set(0, 2.5, 0);
+        treeGroup.add(canopy);
+        treeGroup.position.set(x, 0, z);
+        scene.add(treeGroup);
+        return treeGroup;
+    }
+
+    createTree(-30, -30);
+    createTree(30, -30);
+    createTree(-30, 30);
+    createTree(30, 30);
+    createTree(-10, -10);
+    createTree(10, 10);
+
+    function createRoad(x, z, width, depth, color) {
+        const geometry = new THREE.PlaneGeometry(width, depth);
+        const material = new THREE.MeshBasicMaterial({ color: color });
+        const road = new THREE.Mesh(geometry, material);
+        road.rotation.x = -Math.PI / 2;
+        road.position.set(x, 0.01, z);
+        scene.add(road);
+    }
+
+    const roadWidth = 5;
+    createRoad(0, 0, 100, roadWidth, 0x333333);
+    createRoad(0, 20, 100, roadWidth, 0x333333);
+    createRoad(0, -20, 100, roadWidth, 0x333333);
+    createRoad(0, 0, roadWidth, 100, 0x333333);
+    createRoad(20, 0, roadWidth, 100, 0x333333);
+    createRoad(-20, 0, roadWidth, 100, 0x333333);
+
+    const buildings = [];
+    function createBuilding(x, z, width, depth, height, color) {
+        const buildingGroup = new THREE.Group();
+        const geometry = new THREE.BoxGeometry(width, height, depth);
+        const material = new THREE.MeshBasicMaterial({ color: color });
+        const building = new THREE.Mesh(geometry, material);
+        building.position.set(0, 0, 0); // Base at Y=0 relative to group
+        buildingGroup.add(building);
+
+        buildingGroup.position.set(x, height / 2, z); // Base at world Y=0
+        scene.add(buildingGroup);
+        buildings.push({
+            mesh: buildingGroup,
+            width: width,
+            depth: depth,
+            height: height
+        });
+        return buildingGroup;
+    }
+
+    createBuilding(-10, -10, 5, 5, 8, 0x808080);
+    createBuilding(10, -15, 4, 6, 12, 0xA52A2A);
+    createBuilding(-10, 10, 6, 4, 6, 0x696969);
+    createBuilding(5, 5, 3, 3, 10, 0x8B4513);
+    createBuilding(-35, -35, 4, 4, 9, 0xD3D3D3);
+    createBuilding(35, -35, 5, 5, 7, 0xCD853F);
+    createBuilding(-35, 35, 6, 3, 11, 0xA9A9A9);
+    createBuilding(35, 35, 3, 6, 8, 0xDEB887);
+    createBuilding(-25, -5, 4, 4, 10, 0xC0C0C0);
+    createBuilding(25, -10, 5, 3, 9, 0xF4A460);
+    createBuilding(-5, 30, 3, 5, 12, 0x778899);
+    createBuilding(10, 25, 6, 4, 7, 0xD2691E);
+
+    const cars = [];
+    function createCar(x, z, color, direction) {
+        const carGroup = new THREE.Group();
+        const bodyGeometry = new THREE.BoxGeometry(3, 0.8, 1.5);
+        const bodyMaterial = new THREE.MeshBasicMaterial({ color: color });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.set(0, 0.4, 0);
+        carGroup.add(body);
+
+        const cabinGeometry = new THREE.BoxGeometry(1.5, 0.6, 1.2);
+        const cabinMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
+        const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
+        cabin.position.set(0, 1.0, 0);
+        carGroup.add(cabin);
+
+        const wheelGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+        const wheelMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const wheelPositions = [
+            [-1, 0.2, 0.8], [1, 0.2, 0.8], [-1, 0.2, -0.8], [1, 0.2, -0.8]
+        ];
+        wheelPositions.forEach(pos => {
+            const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheel.position.set(pos[0], pos[1], pos[2]);
+            carGroup.add(wheel);
+        });
+
+        carGroup.position.set(x, 0, z);
+        if (direction === 'z') {
+            carGroup.rotation.y = Math.PI / 2;
         }
+        scene.add(carGroup);
 
-        const chatMessages = [];
-        const fontLoader = new THREE.FontLoader();
-        let font;
-        fontLoader.load(
-            'https://unpkg.com/three@0.134.0/examples/fonts/helvetiker_regular.typeface.json',
-            (loadedFont) => {
-                font = loadedFont;
-                console.log('Font loaded');
-                players.forEach((player, id) => {
-                    if (!player.nameMesh) {
-                        addNameToPlayer(id, player);
-                    }
-                });
-            }
-        );
-
-        const ws = new WebSocket('wss://websocket-multiplayergame-production.up.railway.app');
-        const keys = {};
-
-        document.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
-            if (e.key === 'Enter' || e.key === 'Return') {
-                const messageInput = document.getElementById('messageInput');
-                const usernameInput = document.getElementById('usernameInput');
-                if (document.activeElement === usernameInput) {
-                    updateUsername(myId, usernameInput.value);
-                    usernameInput.blur();
-                } else if (document.activeElement !== messageInput) {
-                    e.preventDefault();
-                    messageInput.focus();
-                }
-            } else if (e.key === ' ' && document.activeElement !== messageInput && document.activeElement !== usernameInput) {
-                const player = players.get(myId);
-                if (player && !player.isFalling && !player.isJumping && !player.isFlying) {
-                    player.isJumping = true;
-                    player.jumpTime = 0;
-                }
-            } else if (e.key === 'f' && document.activeElement !== messageInput && document.activeElement !== usernameInput) {
-                const player = players.get(myId);
-                if (player) {
-                    player.isFlying = !player.isFlying;
-                    if (!player.isFlying) {
-                        let onSurface = player.mesh.position.y <= 0.1;
-                        buildings.forEach(building => {
-                            const buildingTop = building.mesh.position.y + building.height / 2;
-                            if (Math.abs(player.mesh.position.y - buildingTop) < 0.2 &&
-                                Math.abs(player.mesh.position.x - building.mesh.position.x) < building.width / 2 &&
-                                Math.abs(player.mesh.position.z - building.mesh.position.z) < building.depth / 2) {
-                                onSurface = true;
-                                player.mesh.position.y = buildingTop;
-                            }
-                        });
-                        if (!onSurface) {
-                            player.isFalling = true;
-                            player.fallTime = 0;
-                        } else {
-                            player.isFalling = false;
-                            player.fallTime = 0;
-                        }
-                    }
-                    document.getElementById('flightModeGUI').textContent = player.isFlying ? 'Flight Mode: WASD Q E' : 'Press F for Flight Mode';
-                }
-            }
-        });
-
-        document.addEventListener('keyup', (e) => keys[e.key] = false);
-
-        const messageInput = document.getElementById('messageInput');
-        const messagesDiv = document.getElementById('messages');
-
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                if (messageInput.value) {
-                    const message = messageInput.value;
-                    chatMessages.push({ id: myId, message });
-                    addChatMessageAbovePlayer(myId, message);
-                    updateChat();
-                    sendUpdate(message);
-                    messageInput.value = '';
-                    messageInput.blur();
-                } else {
-                    messageInput.blur();
-                }
-            }
-        });
-
-        const usernameInput = document.getElementById('usernameInput');
-
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-
-            switch (data.type) {
-                case 'init':
-                    myId = data.id;
-                    addPlayer(myId, { x: 0, y: 0, z: 0 }, true);
-                    break;
-                case 'playerJoined':
-                    addPlayer(data.id, data.position, false);
-                    break;
-                case 'playerLeft':
-                    removePlayer(data.id);
-                    break;
-                case 'update':
-                    updatePlayer(data.id, data.position, data.message);
-                    break;
-            }
+        return {
+            mesh: carGroup,
+            direction: direction,
+            speed: Math.random() * 0.05 + 0.05
         };
+    }
 
-        function addPlayer(id, position, isMe = false) {
-            const material = isMe ? myMaterial : otherMaterial;
-            const person = createPerson(position.x, position.z, material, isMe);
-            let nameMesh;
-            if (font) {
-                nameMesh = createNameMesh(id, `Player ${id}`);
-                person.group.add(nameMesh);
-            }
-            players.set(id, {
-                mesh: person.group,
-                leftArm: person.leftArm,
-                rightArm: person.rightArm,
-                leftLeg: person.leftLeg,
-                rightLeg: person.rightLeg,
-                animationTime: 0,
-                isFalling: person.isFalling,
-                fallTime: person.fallTime,
-                isJumping: person.isJumping,
-                jumpTime: person.jumpTime,
-                isFlying: person.isFlying,
-                messageMeshes: [],
-                nameMesh: nameMesh,
-                username: `Player ${id}`
-            });
-            if (isMe) {
-                updateCamera(person.group);
-            }
-        }
+    cars.push(createCar(-40, 0, 0xff0000, 'x'));
+    cars.push(createCar(40, 20, 0x0000ff, 'x'));
+    cars.push(createCar(0, -40, 0xffff00, 'z'));
+    cars.push(createCar(-20, 40, 0x00ffff, 'z'));
 
-        function createNameMesh(id, username) {
-            const textGeometry = new THREE.TextGeometry(username, {
-                font: font,
-                size: 0.3,
-                height: 0.1,
-            });
-            textGeometry.center();
-            const nameMesh = new THREE.Mesh(textGeometry, textMaterial);
-            nameMesh.position.set(0, 2.5, 0);
-            return nameMesh;
-        }
+    const players = new Map();
+    let myId;
+    const myMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const otherMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-        function updateUsername(id, newUsername) {
-            if (!newUsername) return;
-            const player = players.get(id);
-            if (player && font) {
-                if (player.nameMesh) {
-                    player.mesh.remove(player.nameMesh);
+    function createPerson(x, z, material, isMe = false) {
+        const personGroup = new THREE.Group();
+        const torsoGeometry = new THREE.BoxGeometry(0.6, 1.0, 0.4);
+        const torso = new THREE.Mesh(torsoGeometry, material);
+        torso.position.set(0, 1.0, 0);
+        personGroup.add(torso);
+        const headGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+        const headMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc99 });
+        const head = new THREE.Mesh(headGeometry, headMaterial);
+        head.position.set(0, 1.6, 0);
+        personGroup.add(head);
+        const armGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
+        const leftArm = new THREE.Mesh(armGeometry, material);
+        leftArm.position.set(-0.5, 0.9, 0);
+        personGroup.add(leftArm);
+        const rightArm = new THREE.Mesh(armGeometry, material);
+        rightArm.position.set(0.5, 0.9, 0);
+        personGroup.add(rightArm);
+        const legGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
+        const leftLeg = new THREE.Mesh(legGeometry, material);
+        leftLeg.position.set(-0.2, 0.4, 0);
+        personGroup.add(leftLeg);
+        const rightLeg = new THREE.Mesh(legGeometry, material);
+        rightLeg.position.set(0.2, 0.4, 0);
+        personGroup.add(rightLeg);
+        personGroup.position.set(x, 0, z);
+        scene.add(personGroup);
+        return {
+            group: personGroup,
+            leftArm: leftArm,
+            rightArm: rightArm,
+            leftLeg: leftLeg,
+            rightLeg: rightLeg,
+            animationTime: 0,
+            isFalling: false,
+            fallTime: 0,
+            isJumping: false,
+            jumpTime: 0,
+            isFlying: false
+        };
+    }
+
+    const chatMessages = [];
+    const fontLoader = new THREE.FontLoader();
+    let font;
+    fontLoader.load(
+        'https://unpkg.com/three@0.134.0/examples/fonts/helvetiker_regular.typeface.json',
+        (loadedFont) => {
+            font = loadedFont;
+            console.log('Font loaded');
+            players.forEach((player, id) => {
+                if (!player.nameMesh) {
+                    addNameToPlayer(id, player);
                 }
-                player.username = newUsername;
-                player.nameMesh = createNameMesh(id, newUsername);
-                player.mesh.add(player.nameMesh);
-                if (player.messageMeshes.length > 0) {
-                    player.nameMesh.visible = false;
-                }
-            }
-        }
-
-        function createChatMessageMesh(message) {
-            const textGeometry = new THREE.TextGeometry(message, {
-                font: font,
-                size: 0.25,
-                height: 0.05,
-            });
-            textGeometry.center();
-            const messageMesh = new THREE.Mesh(textGeometry, textMaterial);
-            return messageMesh;
-        }
-
-        function addChatMessageAbovePlayer(id, message) {
-            if (!font) return;
-            const player = players.get(id);
-            if (!player) return;
-
-            const messageMesh = createChatMessageMesh(message);
-            player.mesh.add(messageMesh);
-            player.messageMeshes.unshift({ mesh: messageMesh, timestamp: Date.now() });
-
-            if (player.nameMesh) {
-                player.nameMesh.visible = false;
-            }
-
-            updateChatMessagePositions(player);
-
-            setTimeout(() => {
-                removeChatMessage(player, messageMesh);
-            }, 5000);
-        }
-
-        function updateChatMessagePositions(player) {
-            const baseHeight = 2.0;
-            const spacing = 0.3;
-            player.messageMeshes.forEach((msg, index) => {
-                msg.mesh.position.set(0, baseHeight + (index * spacing), 0);
             });
         }
+    );
 
-        function removeChatMessage(player, messageMesh) {
-            const index = player.messageMeshes.findIndex(m => m.mesh === messageMesh);
-            if (index !== -1) {
-                player.mesh.remove(messageMesh);
-                player.messageMeshes.splice(index, 1);
-                updateChatMessagePositions(player);
+    const ws = new WebSocket('wss://websocket-multiplayergame-production.up.railway.app');
+    const keys = {};
 
-                if (player.messageMeshes.length === 0 && player.nameMesh) {
-                    player.nameMesh.visible = true;
-                }
+    document.addEventListener('keydown', (e) => {
+        keys[e.key] = true;
+        if (e.key === 'Enter' || e.key === 'Return') {
+            const messageInput = document.getElementById('messageInput');
+            const usernameInput = document.getElementById('usernameInput');
+            if (document.activeElement === usernameInput) {
+                updateUsername(myId, usernameInput.value);
+                usernameInput.blur();
+            } else if (document.activeElement !== messageInput) {
+                e.preventDefault();
+                messageInput.focus();
             }
-        }
-
-        function addNameToPlayer(id, player) {
-            const nameMesh = createNameMesh(id, player.username);
-            player.mesh.add(nameMesh);
-            player.nameMesh = nameMesh;
-            if (player.messageMeshes.length === 0) {
-                nameMesh.visible = true;
+        } else if (e.key === ' ' && document.activeElement !== messageInput && document.activeElement !== usernameInput) {
+            const player = players.get(myId);
+            if (player && !player.isFalling && !player.isJumping && !player.isFlying) {
+                player.isJumping = true;
+                player.jumpTime = 0;
             }
-        }
-
-        function removePlayer(id) {
-            const player = players.get(id);
+        } else if (e.key === 'f' && document.activeElement !== messageInput && document.activeElement !== usernameInput) {
+            const player = players.get(myId);
             if (player) {
-                scene.remove(player.mesh);
-                players.delete(id);
-            }
-        }
-
-        function updatePlayer(id, position, message) {
-            const player = players.get(id);
-            if (player) {
-                player.mesh.position.set(position.x, position.y || 0, position.z);
-                if (message && id !== myId) {
-                    chatMessages.push({ id, message });
-                    addChatMessageAbovePlayer(id, message);
-                    updateChat();
-                }
-            }
-        }
-
-        function sendUpdate(message = '') {
-            const position = players.get(myId)?.mesh.position || { x: 0, y: 0, z: 0 };
-            ws.send(JSON.stringify({
-                type: 'update',
-                position: position,
-                message: message
-            }));
-        }
-
-        function updateChat() {
-            messagesDiv.innerHTML = '';
-            chatMessages.forEach(msg => {
-                const div = document.createElement('div');
-                div.className = 'chat-message';
-                const player = players.get(msg.id);
-                const username = player ? player.username : `Player ${msg.id}`;
-                div.textContent = `${username}: ${msg.message}`;
-                messagesDiv.appendChild(div);
-            });
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function updateCamera(player) {
-            const offset = new THREE.Vector3(0, 5, 10);
-            camera.position.copy(player.position).add(offset);
-            camera.lookAt(player.position);
-        }
-
-        function checkCollision(player, object) {
-            const playerBox = new THREE.Box3().setFromCenterAndSize(
-                player.mesh.position,
-                new THREE.Vector3(0.6, 1.8, 0.4)
-            );
-            const objectBox = new THREE.Box3().setFromCenterAndSize(
-                object.mesh.position,
-                new THREE.Vector3(object.width, object.height, object.depth)
-            );
-            return playerBox.intersectsBox(objectBox);
-        }
-
-        function updateCarsCloudsAndAnimations() {
-            cars.forEach(car => {
-                if (car.direction === 'x') {
-                    car.mesh.position.x += car.speed;
-                    if (car.mesh.position.x > 50) car.mesh.position.x = -50;
-                } else if (car.direction === 'z') {
-                    car.mesh.position.z += car.speed;
-                    if (car.mesh.position.z > 50) car.mesh.position.z = -50;
-                }
-            });
-
-            clouds.forEach(cloud => {
-                cloud.position.x += 0.02;
-                if (cloud.position.x > 500) cloud.position.x = -500;
-            });
-
-            players.forEach(player => {
-                const isMoving = keys['w'] || keys['s'] || keys['a'] || keys['d'];
-                let isColliding = false;
-
-                cars.forEach(car => {
-                    if (checkCollision(player, car) && !player.isFalling && !player.isJumping && !player.isFlying) {
-                        isColliding = true;
-                        player.isFalling = true;
-                        player.fallTime = 0;
-                    }
-                });
-
-                if (player.isFalling) {
-                    player.fallTime += 0.1;
-                    const fallProgress = Math.min(player.fallTime / 0.5, 1);
-                    player.mesh.position.y -= 0.2;
-                    let landed = false;
-
+                player.isFlying = !player.isFlying;
+                if (!player.isFlying) {
+                    // Exiting flight mode: check if on a surface
+                    let onSurface = player.mesh.position.y <= 0.1; // Ground level with tolerance
                     buildings.forEach(building => {
-                        if (checkCollision(player, building)) {
-                            const buildingTop = building.mesh.position.y + building.height / 2;
-                            if (player.mesh.position.y <= buildingTop + 0.1) {
-                                player.mesh.position.y = buildingTop;
-                                landed = true;
-                            }
+                        const buildingTop = building.mesh.position.y + building.height / 2;
+                        if (Math.abs(player.mesh.position.y - buildingTop) < 0.2 &&
+                            Math.abs(player.mesh.position.x - building.mesh.position.x) < building.width / 2 &&
+                            Math.abs(player.mesh.position.z - building.mesh.position.z) < building.depth / 2) {
+                            onSurface = true;
+                            player.mesh.position.y = buildingTop; // Snap to roof
                         }
                     });
-
-                    if (player.mesh.position.y <= 0 || landed) {
-                        player.mesh.position.y = Math.max(0, player.mesh.position.y);
-                        player.isFalling = false;
+                    if (!onSurface) {
+                        player.isFalling = true;
                         player.fallTime = 0;
-                        player.mesh.rotation.x = 0;
-                        player.animationTime = 0;
                     } else {
-                        player.mesh.rotation.x = fallProgress * Math.PI / 2;
+                        player.isFalling = false; // Ensure grounded state
+                        player.fallTime = 0;
                     }
-                } else if (player.isJumping) {
-                    player.jumpTime += 0.1;
-                    const jumpProgress = Math.min(player.jumpTime / 1.5, 1);
-                    const height = Math.sin(jumpProgress * Math.PI) * 1.5;
-                    player.mesh.position.y = height;
+                }
+                document.getElementById('flightModeGUI').textContent = player.isFlying ? 'Flight Mode: WASD Q E' : 'Press F for Flight Mode';
+            }
+        }
+    });
 
-                    const jumpAngle = -0.5;
-                    player.leftLeg.rotation.x = jumpAngle;
-                    player.rightLeg.rotation.x = jumpAngle;
-                    player.leftArm.rotation.x = 0.3;
-                    player.rightArm.rotation.x = 0.3;
+    document.addEventListener('keyup', (e) => keys[e.key] = false);
 
-                    if (jumpProgress >= 1) {
-                        player.isJumping = false;
-                        player.mesh.position.y = 0;
-                        player.animationTime = 0;
-                        player.leftLeg.rotation.x = 0;
-                        player.rightLeg.rotation.x = 0;
-                        player.leftArm.rotation.x = 0;
-                        player.rightArm.rotation.x = 0;
+    const messageInput = document.getElementById('messageInput');
+    const messagesDiv = document.getElementById('messages');
+    
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            if (messageInput.value) {
+                const message = messageInput.value;
+                chatMessages.push({ id: myId, message });
+                addChatMessageAbovePlayer(myId, message);
+                updateChat();
+                sendUpdate(message);
+                messageInput.value = '';
+                messageInput.blur();
+            } else {
+                messageInput.blur();
+            }
+        }
+    });
+
+    const usernameInput = document.getElementById('usernameInput');
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        switch (data.type) {
+            case 'init':
+                myId = data.id;
+                addPlayer(myId, { x: 0, y: 0, z: 0 }, true);
+                break;
+                
+            case 'playerJoined':
+                addPlayer(data.id, data.position, false);
+                break;
+                
+            case 'playerLeft':
+                removePlayer(data.id);
+                break;
+                
+            case 'update':
+                updatePlayer(data.id, data.position, data.message);
+                break;
+        }
+    };
+
+    function addPlayer(id, position, isMe = false) {
+        const material = isMe ? myMaterial : otherMaterial;
+        const person = createPerson(position.x, position.z, material, isMe);
+        let nameMesh;
+        if (font) {
+            nameMesh = createNameMesh(id, `Player ${id}`);
+            person.group.add(nameMesh);
+        }
+        players.set(id, { 
+            mesh: person.group,
+            leftArm: person.leftArm,
+            rightArm: person.rightArm,
+            leftLeg: person.leftLeg,
+            rightLeg: person.rightLeg,
+            animationTime: 0,
+            isFalling: person.isFalling,
+            fallTime: person.fallTime,
+            isJumping: person.isJumping,
+            jumpTime: person.jumpTime,
+            isFlying: person.isFlying,
+            messageMeshes: [],
+            nameMesh: nameMesh,
+            username: `Player ${id}`
+        });
+        if (isMe) {
+            updateCamera(person.group);
+        }
+    }
+
+    function createNameMesh(id, username) {
+        const textGeometry = new THREE.TextGeometry(username, {
+            font: font,
+            size: 0.3,
+            height: 0.1,
+        });
+        textGeometry.center();
+        const nameMesh = new THREE.Mesh(textGeometry, textMaterial);
+        nameMesh.position.set(0, 2.5, 0);
+        return nameMesh;
+    }
+
+    function updateUsername(id, newUsername) {
+        if (!newUsername) return;
+        const player = players.get(id);
+        if (player && font) {
+            if (player.nameMesh) {
+                player.mesh.remove(player.nameMesh);
+            }
+            player.username = newUsername;
+            player.nameMesh = createNameMesh(id, newUsername);
+            player.mesh.add(player.nameMesh);
+            if (player.messageMeshes.length > 0) {
+                player.nameMesh.visible = false;
+            }
+        }
+    }
+
+    function createChatMessageMesh(message) {
+        const textGeometry = new THREE.TextGeometry(message, {
+            font: font,
+            size: 0.25,
+            height: 0.05,
+        });
+        textGeometry.center();
+        const messageMesh = new THREE.Mesh(textGeometry, textMaterial);
+        return messageMesh;
+    }
+
+    function addChatMessageAbovePlayer(id, message) {
+        if (!font) return;
+        const player = players.get(id);
+        if (!player) return;
+
+        const messageMesh = createChatMessageMesh(message);
+        player.mesh.add(messageMesh);
+        player.messageMeshes.unshift({ mesh: messageMesh, timestamp: Date.now() });
+
+        if (player.nameMesh) {
+            player.nameMesh.visible = false;
+        }
+
+        updateChatMessagePositions(player);
+
+        setTimeout(() => {
+            removeChatMessage(player, messageMesh);
+        }, 5000);
+    }
+
+    function updateChatMessagePositions(player) {
+        const baseHeight = 2.0;
+        const spacing = 0.3;
+        player.messageMeshes.forEach((msg, index) => {
+            msg.mesh.position.set(0, baseHeight + (index * spacing), 0);
+        });
+    }
+
+    function removeChatMessage(player, messageMesh) {
+        const index = player.messageMeshes.findIndex(m => m.mesh === messageMesh);
+        if (index !== -1) {
+            player.mesh.remove(messageMesh);
+            player.messageMeshes.splice(index, 1);
+            updateChatMessagePositions(player);
+
+            if (player.messageMeshes.length === 0 && player.nameMesh) {
+                player.nameMesh.visible = true;
+            }
+        }
+    }
+
+    function addNameToPlayer(id, player) {
+        const nameMesh = createNameMesh(id, player.username);
+        player.mesh.add(nameMesh);
+        player.nameMesh = nameMesh;
+        if (player.messageMeshes.length === 0) {
+            nameMesh.visible = true;
+        }
+    }
+
+    function removePlayer(id) {
+        const player = players.get(id);
+        if (player) {
+            scene.remove(player.mesh);
+            players.delete(id);
+        }
+    }
+
+    function updatePlayer(id, position, message) {
+        const player = players.get(id);
+        if (player) {
+            player.mesh.position.set(position.x, position.y || 0, position.z);
+            if (message && id !== myId) {
+                chatMessages.push({ id, message });
+                addChatMessageAbovePlayer(id, message);
+                updateChat();
+            }
+        }
+    }
+
+    function sendUpdate(message = '') {
+        const position = players.get(myId)?.mesh.position || { x: 0, y: 0, z: 0 };
+        ws.send(JSON.stringify({
+            type: 'update',
+            position: position,
+            message: message
+        }));
+    }
+
+    function updateChat() {
+        messagesDiv.innerHTML = '';
+        chatMessages.forEach(msg => {
+            const div = document.createElement('div');
+            div.className = 'chat-message';
+            const player = players.get(msg.id);
+            const username = player ? player.username : `Player ${msg.id}`;
+            div.textContent = `${username}: ${msg.message}`;
+            messagesDiv.appendChild(div);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function updateCamera(player) {
+        const offset = new THREE.Vector3(0, 5, 10);
+        camera.position.copy(player.position).add(offset);
+        camera.lookAt(player.position);
+    }
+
+    function checkCollision(player, object) {
+        const playerBox = new THREE.Box3().setFromCenterAndSize(
+            player.mesh.position,
+            new THREE.Vector3(0.6, 1.8, 0.4)
+        );
+        const objectBox = new THREE.Box3().setFromCenterAndSize(
+            object.mesh.position,
+            new THREE.Vector3(object.width, object.height, object.depth)
+        );
+        return playerBox.intersectsBox(objectBox);
+    }
+
+    function updateCarsCloudsAndAnimations() {
+        cars.forEach(car => {
+            if (car.direction === 'x') {
+                car.mesh.position.x += car.speed;
+                if (car.mesh.position.x > 50) car.mesh.position.x = -50;
+            } else if (car.direction === 'z') {
+                car.mesh.position.z += car.speed;
+                if (car.mesh.position.z > 50) car.mesh.position.z = -50;
+            }
+        });
+
+        clouds.forEach(cloud => {
+            cloud.position.x += 0.02;
+            if (cloud.position.x > 500) cloud.position.x = -500;
+        });
+
+        players.forEach(player => {
+            const isMoving = keys['w'] || keys['s'] || keys['a'] || keys['d'];
+            let isColliding = false;
+
+            cars.forEach(car => {
+                if (checkCollision(player, car) && !player.isFalling && !player.isJumping && !player.isFlying) {
+                    isColliding = true;
+                    player.isFalling = true;
+                    player.fallTime = 0;
+                }
+            });
+
+            if (player.isFalling) {
+                player.fallTime += 0.1;
+                const fallProgress = Math.min(player.fallTime / 0.5, 1);
+                player.mesh.position.y -= 0.2; // Fall speed
+                let landed = false;
+
+                buildings.forEach(building => {
+                    if (checkCollision(player, building)) {
+                        const buildingTop = building.mesh.position.y + building.height / 2;
+                        if (player.mesh.position.y <= buildingTop + 0.1) {
+                            player.mesh.position.y = buildingTop;
+                            landed = true;
+                        }
                     }
-                } else if (isMoving && document.activeElement !== messageInput && document.activeElement !== usernameInput) {
-                    player.animationTime += 0.1;
-                    const angle = Math.sin(player.animationTime) * 0.5;
-                    player.leftLeg.rotation.x = angle;
-                    player.rightLeg.rotation.x = -angle;
-                    player.leftArm.rotation.x = -angle;
-                    player.rightArm.rotation.x = angle;
-                } else {
+                });
+
+                if (player.mesh.position.y <= 0 || landed) {
+                    player.mesh.position.y = Math.max(0, player.mesh.position.y);
+                    player.isFalling = false;
+                    player.fallTime = 0;
                     player.mesh.rotation.x = 0;
+                    player.animationTime = 0;
+                } else {
+                    player.mesh.rotation.x = fallProgress * Math.PI / 2;
+                }
+            } else if (player.isJumping) {
+                player.jumpTime += 0.1;
+                const jumpProgress = Math.min(player.jumpTime / 1.5, 1);
+                const height = Math.sin(jumpProgress * Math.PI) * 1.5;
+                player.mesh.position.y = height;
+
+                const jumpAngle = -0.5;
+                player.leftLeg.rotation.x = jumpAngle;
+                player.rightLeg.rotation.x = jumpAngle;
+                player.leftArm.rotation.x = 0.3;
+                player.rightArm.rotation.x = 0.3;
+
+                if (jumpProgress >= 1) {
+                    player.isJumping = false;
+                    player.mesh.position.y = 0;
+                    player.animationTime = 0;
                     player.leftLeg.rotation.x = 0;
                     player.rightLeg.rotation.x = 0;
                     player.leftArm.rotation.x = 0;
                     player.rightArm.rotation.x = 0;
-                    player.animationTime = 0;
                 }
-            });
-        }
+            } else if (isMoving && document.activeElement !== messageInput && document.activeElement !== usernameInput) {
+                player.animationTime += 0.1;
+                const angle = Math.sin(player.animationTime) * 0.5;
+                player.leftLeg.rotation.x = angle;
+                player.rightLeg.rotation.x = -angle;
+                player.leftArm.rotation.x = -angle;
+                player.rightArm.rotation.x = angle;
+            } else {
+                player.mesh.rotation.x = 0;
+                player.leftLeg.rotation.x = 0;
+                player.rightLeg.rotation.x = 0;
+                player.leftArm.rotation.x = 0;
+                player.rightArm.rotation.x = 0;
+                player.animationTime = 0;
+            }
+        });
+    }
 
-        function animate() {
-            requestAnimationFrame(animate);
+    function animate() {
+        requestAnimationFrame(animate);
 
-            const speed = 0.1;
-            const player = players.get(myId);
-            if (player) {
-                const prevPosition = player.mesh.position.clone();
-                if (document.activeElement !== messageInput && document.activeElement !== usernameInput) {
-                    if (keys['w']) player.mesh.position.z -= speed;
-                    if (keys['s']) player.mesh.position.z += speed;
-                    if (keys['a']) player.mesh.position.x -= speed;
-                    if (keys['d']) player.mesh.position.x += speed;
+        const speed = 0.1;
+        const player = players.get(myId);
+        if (player) { // Removed !player.isFalling && !player.isJumping from condition
+            const prevPosition = player.mesh.position.clone();
+            if (document.activeElement !== messageInput && document.activeElement !== usernameInput) {
+                if (keys['w']) player.mesh.position.z -= speed;
+                if (keys['s']) player.mesh.position.z += speed;
+                if (keys['a']) player.mesh.position.x -= speed;
+                if (keys['d']) player.mesh.position.x += speed;
 
-                    if (player.isFlying) {
-                        if (keys['e']) player.mesh.position.y += speed;
-                        if (keys['q']) player.mesh.position.y -= speed;
-                    }
+                if (player.isFlying) {
+                    if (keys['e']) player.mesh.position.y += speed;
+                    if (keys['q']) player.mesh.position.y -= speed;
+                }
 
-                    let collided = false;
-                    buildings.forEach(building => {
-                        if (checkCollision(player, building)) {
-                            const buildingTop = building.mesh.position.y + building.height / 2;
-                            if (!player.isFlying) {
-                                if (prevPosition.y >= buildingTop && player.mesh.position.y < buildingTop + 1.8) {
-                                    player.mesh.position.y = buildingTop;
-                                } else {
-                                    player.mesh.position.copy(prevPosition);
-                                }
+                let collided = false;
+                buildings.forEach(building => {
+                    if (checkCollision(player, building)) {
+                        const buildingTop = building.mesh.position.y + building.height / 2;
+                        if (!player.isFlying) {
+                            if (prevPosition.y >= buildingTop && player.mesh.position.y < buildingTop + 1.8) {
+                                player.mesh.position.y = buildingTop;
                             } else {
                                 player.mesh.position.copy(prevPosition);
                             }
-                            collided = true;
+                        } else {
+                            player.mesh.position.copy(prevPosition); // Collide in fly mode
+                        }
+                        collided = true;
+                    }
+                });
+
+                if (!player.isFlying && !player.isFalling && !collided && player.mesh.position.y > 0.1) {
+                    let onSurface = false;
+                    buildings.forEach(building => {
+                        const buildingTop = building.mesh.position.y + building.height / 2;
+                        if (Math.abs(player.mesh.position.y - buildingTop) < 0.2 &&
+                            Math.abs(player.mesh.position.x - building.mesh.position.x) < building.width / 2 &&
+                            Math.abs(player.mesh.position.z - building.mesh.position.z) < building.depth / 2) {
+                            onSurface = true;
                         }
                     });
-
-                    if (!player.isFlying && !player.isFalling && !collided && player.mesh.position.y > 0.1) {
-                        let onSurface = false;
-                        buildings.forEach(building => {
-                            const buildingTop = building.mesh.position.y + building.height / 2;
-                            if (Math.abs(player.mesh.position.y - buildingTop) < 0.2 &&
-                                Math.abs(player.mesh.position.x - building.mesh.position.x) < building.width / 2 &&
-                                Math.abs(player.mesh.position.z - building.mesh.position.z) < building.depth / 2) {
-                                onSurface = true;
-                            }
-                        });
-                        if (!onSurface) {
-                            player.isFalling = true;
-                            player.fallTime = 0;
-                        }
-                    }
-
-                    player.mesh.position.x = Math.max(-50, Math.min(50, player.mesh.position.x));
-                    player.mesh.position.z = Math.max(-50, Math.min(50, player.mesh.position.z));
-
-                    if (!player.mesh.position.equals(prevPosition)) {
-                        sendUpdate();
+                    if (!onSurface) {
+                        player.isFalling = true;
+                        player.fallTime = 0;
                     }
                 }
 
-                updateCamera(player.mesh);
+                player.mesh.position.x = Math.max(-50, Math.min(50, player.mesh.position.x));
+                player.mesh.position.z = Math.max(-50, Math.min(50, player.mesh.position.z));
+
+                if (!player.mesh.position.equals(prevPosition)) {
+                    sendUpdate();
+                }
             }
 
-            if (player) {
-                const coordsDiv = document.getElementById('coordinates');
-                coordsDiv.textContent = `X: ${player.mesh.position.x.toFixed(1)}, Y: ${player.mesh.position.y.toFixed(1)}, Z: ${player.mesh.position.z.toFixed(1)}`;
-            }
-
-            updateCarsCloudsAndAnimations();
-            renderer.render(scene, camera);
+            updateCamera(player.mesh);
         }
-        animate();
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
-</html>
+        if (player) {
+            const coordsDiv = document.getElementById('coordinates');
+            coordsDiv.textContent = `X: ${player.mesh.position.x.toFixed(1)}, Y: ${player.mesh.position.y.toFixed(1)}, Z: ${player.mesh.position.z.toFixed(1)}`;
+        }
+
+        updateCarsCloudsAndAnimations();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
